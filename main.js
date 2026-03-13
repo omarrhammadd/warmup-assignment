@@ -1,5 +1,42 @@
 const fs = require("fs");
 
+// Helper: Convert 12-hour time string to seconds since midnight
+function timeToSeconds(timeStr) {
+    const [time, meridiem] = timeStr.trim().toLowerCase().split(" ");
+    const [h, m, s] = time.split(":").map((n) => parseInt(n, 10));
+    let hour = h % 12;
+    if (meridiem === "pm") hour += 12;
+    return hour * 3600 + m * 60 + s;
+}
+
+// Helper: Convert duration string "h:mm:ss" to seconds
+function durationToSeconds(durStr) {
+    const [h, m, s] = durStr.split(":").map((n) => parseInt(n, 10));
+    return h * 3600 + m * 60 + s;
+}
+
+// Helper: Convert seconds to duration string "h:mm:ss"
+function secondsToDuration(totalSec) {
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+    const paddedMinutes = String(minutes).padStart(2, "0");
+    const paddedSeconds = String(seconds).padStart(2, "0");
+    return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+}
+
+// Time subtract helper: duration from time2 to time1
+function subtractTimes(time1, time2) {
+    const startSec = timeToSeconds(time2);
+    const endSec = timeToSeconds(time1);
+    let durationSec = endSec - startSec;
+    if (durationSec < 0) {
+        durationSec += 24 * 3600;
+    }
+    return secondsToDuration(durationSec);
+}
+
+
 // ============================================================
 // Function 1: getShiftDuration(startTime, endTime)
 // startTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
@@ -7,7 +44,8 @@ const fs = require("fs");
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Implement this function
+    
+    
 }
 
 // ============================================================
@@ -17,7 +55,7 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+    
 }
 
 // ============================================================
