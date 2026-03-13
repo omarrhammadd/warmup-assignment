@@ -44,8 +44,8 @@ function subtractTimes(time1, time2) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    
-    
+
+    return subtractTimes(endTime, startTime);
 }
 
 // ============================================================
@@ -55,8 +55,33 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    
+    const deliveryStartSec = 8 * 3600; // 8:00 AM
+    const deliveryEndSec = 22 * 3600; // 10:00 PM
+
+    let shiftStartSec = timeToSeconds(startTime);
+    let shiftEndSec = timeToSeconds(endTime);
+
+    if (shiftEndSec < shiftStartSec) {
+        shiftEndSec += 24 * 3600;
+    }
+
+    let idleSec = 0;
+
+    // Idle time before 8:00 AM
+    if (shiftStartSec < deliveryStartSec) {
+        const idleEnd = Math.min(shiftEndSec, deliveryStartSec);
+        idleSec += idleEnd - shiftStartSec;
+    }
+
+    // Idle time after 10:00 PM
+    if (shiftEndSec > deliveryEndSec) {
+        const idleStart = Math.max(shiftStartSec, deliveryEndSec);
+        idleSec += shiftEndSec - idleStart;
+    }
+
+    return secondsToDuration(idleSec);
 }
+
 
 // ============================================================
 // Function 3: getActiveTime(shiftDuration, idleTime)
@@ -65,7 +90,10 @@ function getIdleTime(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getActiveTime(shiftDuration, idleTime) {
-    // TODO: Implement this function
+    const shiftSec = durationToSeconds(shiftDuration);
+    const idleSec = durationToSeconds(idleTime);
+    const activeSec = Math.max(0, shiftSec - idleSec);
+    return secondsToDuration(activeSec);
 }
 
 // ============================================================
@@ -75,7 +103,18 @@ function getActiveTime(shiftDuration, idleTime) {
 // Returns: boolean
 // ============================================================
 function metQuota(date, activeTime) {
-    // TODO: Implement this function
+    // normal quota is 8 hours and 24 minutes
+    let minQuotaSec = 8 * 3600 + 24 * 60; // 8 hours and 24 minutes in seconds
+    const activeSec = durationToSeconds(activeTime);
+    // check if date is in Eid Period (April 10 to April 30, 2025)
+    const eidStart = "2025-04-10";
+    const eidEnd = "2025-04-30";
+    
+    if (date >= eidStart && date <= eidEnd) {
+        minQuotaSec = 6 * 3600; // 6 hours in seconds during Eid Period
+    }
+    return activeSec >= minQuotaSec;
+
 }
 
 // ============================================================
@@ -85,7 +124,43 @@ function metQuota(date, activeTime) {
 // Returns: object with 10 properties or empty object {}
 // ============================================================
 function addShiftRecord(textFile, shiftObj) {
-    // TODO: Implement this function
+    let text = fs.readFileSync(textFile, "utf-8");
+    let lines = text.trim().split("\n");
+    let fields = lines.map((line) => line.split(","));
+    for (let i = 0; i < lines.length; i++) {
+        if (fields[i][0] === shiftObj.driverID && 
+            fields[i][2] === shiftObj.date && 
+            fields[i][3] === shiftObj.startTime && 
+            fields[i][4] === shiftObj.endTime) {
+            return {};
+        }
+    }
+    // calculate ShiftDuration,IdleTime,ActiveTime,MetQuota,HasBonus
+    const shiftDuration = getShiftDuration(shiftObj.startTime, shiftObj.endTime);
+    const idleTime = getIdleTime(shiftObj.startTime, shiftObj.endTime);
+    const activeTime = getActiveTime(shiftDuration, idleTime);
+    const metQuotaResult = metQuota(shiftObj.date, activeTime);
+    const hasBonus = false; // default to false
+    // create new record string
+    const newRecord = `${shiftObj.driverID},${shiftObj.driverName},${shiftObj.date},${shiftObj.startTime},${shiftObj.endTime},${shiftDuration},${idleTime},${activeTime},${metQuotaResult},${hasBonus}`;
+    // append new record to text file
+    fs.appendFileSync(textFile, `\n${newRecord}`);
+    // return new record as object
+    return {
+        driverID: shiftObj.driverID,
+        driverName: shiftObj.driverName,
+        date: shiftObj.date,
+        startTime: shiftObj.startTime,
+        endTime: shiftObj.endTime,
+        shiftDuration: shiftDuration,
+        idleTime: idleTime,
+        activeTime: activeTime,
+        metQuota: metQuotaResult,
+        hasBonus: hasBonus
+    };
+
+
+    
 }
 
 // ============================================================
@@ -97,7 +172,7 @@ function addShiftRecord(textFile, shiftObj) {
 // Returns: nothing (void)
 // ============================================================
 function setBonus(textFile, driverID, date, newValue) {
-    // TODO: Implement this function
+    
 }
 
 // ============================================================
